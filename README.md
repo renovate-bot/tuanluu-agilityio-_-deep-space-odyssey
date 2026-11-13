@@ -87,3 +87,7 @@ plan is not necessarily implemented. Open the app with `?debug` in the URL to ge
 - Sound never starts before the first click (browser autoplay policy and courtesy).
 - Sound is in-cabin cinematic design. Space itself is silent.
 - Original work: no designs, characters or assets from existing films or games are used.
+
+## Deploy (Netlify)
+
+`netlify.toml` holds the build settings (`npm run build`, publish `dist`, Node 22). In Netlify choose "Add new project", "Import an existing project", pick this GitHub repository and deploy; every push to `main` then redeploys.
