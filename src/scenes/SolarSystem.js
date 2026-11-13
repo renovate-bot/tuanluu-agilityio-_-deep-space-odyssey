@@ -56,7 +56,7 @@ export function buildMars(ctx) {
 export function buildJupiter(ctx) {
   const jupiter = new Planet(ctx.renderer, {
     name: 'Jupiter', surface: 'jupiter', radius: RADII.jupiter, textureSize: ctx.tier.planetTex, tilt: 0.054,
-    rotationSpeed: 0.02, spin0: 1.84, bump: 1.5, sunColor: SUN_COLOR, sunIntensity: 1.15,
+    rotationSpeed: 0.012, spin0: 1.84, bump: 1.5, sunColor: SUN_COLOR, sunIntensity: 1.15,
     atmoColor: 0xd8b48a, twilight: 0x8a5a3a, atmoInner: 0.3,
     atmospheres: [{ scale: 1.02, color: 0xe6c8a0, twilight: 0xb07048, strength: 0.5, falloff: 2.4 }],
   });
@@ -72,6 +72,8 @@ export function buildJupiter(ctx) {
 
   return {
     planet: jupiter,
+    // bring the Great Red Spot round to the sunlit, ship-facing side while the ship is still inbound
+    onArrive() { jupiter.spin.rotation.y = 1.7; },
     pois: [poi('jupiter', jupiter.group.position, RADII.jupiter, { observe: [-0.85, -0.3, 1.5] }), ...moons.pois],
     update(dt, time, camera) { jupiter.update(dt, time, ctx.sun, camera); moons.update(dt, time, camera); },
     dispose() { jupiter.dispose(); moons.dispose(); },

@@ -137,7 +137,10 @@ export class NavigationSystem {
     e.env.lightPos.copy(v3(WORLD[dest.light.at]));
     e.env.color.setRGB(...dest.cabin);
     if (immediate) e.env.intensity = dest.light.intensity;
-    if (e.currentDest !== dest) e.setSector(dest);
+    if (e.currentDest !== dest) {
+      e.setSector(dest);
+      for (const id of dest.sectors) { const sec = e.universe.sectors.get(id); if (sec && sec.onArrive) sec.onArrive(); }
+    }
   }
 
   abort(err, from) {

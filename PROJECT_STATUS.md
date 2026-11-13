@@ -32,7 +32,7 @@ Checked = exercised with Playwright + Chromium (software WebGL), screenshots rev
 ## Measured in this session
 - 16 consecutive jumps across all 8 destinations: GPU geometries 140 → 140, textures 42 → 42, JS heap 21 MB → 21 MB.
   No growth, no stuck animations.
-- Production build: ~0.96 MB JS (≈ 265 kB gzip) in lazy chunks, 14 kB CSS. No external assets.
+- Production build: about 1 MB of JS (≈ 275 kB gzip) in lazy chunks, 14 kB CSS. No external assets.
 - Console: no errors or warnings during boarding, all 8 jumps, 3 events, panels.
 - Reduced Motion jump: warp tunnel never shown, fade used instead, no arrival event.
 
