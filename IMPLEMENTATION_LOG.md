@@ -47,3 +47,12 @@
 ### Verification performed
 See PROJECT_STATUS.md → "Implemented and checked" and "Measured". Real-GPU frame rate and audio listening
 were **not** possible in this environment.
+
+## 2026-11-13 · Vietnamese language (i18n)
+
+- Added `src/i18n/` (`index.js`, `vi.js`). English strings are the keys; the engine still emits English codes and only the display layer translates (`tr`, `useT`, `trTarget`, `trRange`).
+- `store.lang` (`en` | `vi`), saved in `localStorage` as `dso.lang`; first visit follows the browser language. `<html lang>` follows it.
+- `LanguageSwitch` on the title screen (top right) and in Settings.
+- Translated: loading, intro, HUD, status/ship-AI lines, navigation, destinations, target cards (all 25 bodies, same figures, vi number format), audio, settings, help, errors, and the four cockpit canvas screens.
+- Left in English on purpose: DEEP SPACE ODYSSEY, ODYSSEY-01, invented proper names (Azure Veil, Helix Crown, Vespera...), WARP.
+- Checked headless at 1280x720 (low tier): switch on intro, boarding, nav panel, Earth target card, settings, help, console screens, persistence after reload, no clipped labels, clean console. Not checked: narrow phone widths in Vietnamese.

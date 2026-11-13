@@ -31,3 +31,5 @@ Ordered by priority. Read PROJECT_STATUS.md first and confirm against the source
 2. Unload far sectors on Low tier to cap GPU memory.
 3. TypeScript migration if the team prefers it.
 4. Deploy: any static host; `dist/` uses relative paths.
+
+- Vietnamese: check wording with a native reader on real devices, and check narrow phone layouts with the longer labels.

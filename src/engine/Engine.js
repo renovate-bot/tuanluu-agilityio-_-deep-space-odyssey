@@ -303,7 +303,7 @@ export class Engine {
     }
     this.store.set(patch);
     const scr = this.cockpit.screens.state;
-    scr.sector = s.sectorName; scr.engine = s.engineStatus; scr.warp = this.warp;
+    scr.lang = s.lang; scr.sector = s.sectorName; scr.engine = s.engineStatus; scr.warp = this.warp;
     scr.heading = ((-this.camera.yaw * 180) / Math.PI + 360) % 360; scr.pitch = (this.camera.pitch * 180) / Math.PI;
     scr.dest = s.travel ? destinationById(s.travel.toId)?.name || '—' : s.navSelected ? destinationById(s.navSelected)?.name || '—' : '—';
   }

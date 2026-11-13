@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../store/store.js';
 import { useActions } from '../../hooks/useEngine.js';
+import { useT } from '../../i18n/index.js';
 
 /** Ship-AI messages, the current travel stage, and the Skip control for any running sequence. */
 export default function StatusLine() {
   const actions = useActions();
+  const t = useT();
   const message = useStore((s) => s.message);
   const travel = useStore((s) => s.travel);
   const event = useStore((s) => s.event);
@@ -19,14 +21,14 @@ export default function StatusLine() {
     return () => clearTimeout(t);
   }, [message]);
 
-  const stage = travel ? `${travel.stage} · ${travel.name}` : event ? event : phase === 'boarding' ? 'BOARDING' : null;
+  const stage = travel ? `${t(travel.stage)} · ${t(travel.name)}` : event ? t(event) : phase === 'boarding' ? t('BOARDING') : null;
   return (
     <div className="status">
-      {shown && <p className="status__msg" key={shown.id} role="status" aria-live="polite"><b>AI</b>{shown.text}</p>}
+      {shown && <p className="status__msg" key={shown.id} role="status" aria-live="polite"><b>AI</b>{t(shown.text)}</p>}
       {(stage || canSkip) && (
         <div className="status__stage">
           {stage && <span className={travel ? 'is-live' : ''}>{stage}</span>}
-          {canSkip && <button className="btn btn--ghost" onClick={actions.skip}>SKIP <kbd>SPACE</kbd></button>}
+          {canSkip && <button className="btn btn--ghost" onClick={actions.skip}>{t('SKIP')} <kbd>SPACE</kbd></button>}
         </div>
       )}
     </div>

@@ -62,3 +62,7 @@ Checked = exercised with Playwright + Chromium (software WebGL), screenshots rev
 6. UI ↔ engine through one observable store + `engine.actions`. React never touches three objects.
 7. Wrapped star fields follow a capped "visual" position so warp speed does not alias them.
 8. Sound is synthesised; one-shot voices are capped by tracking end times.
+
+## Update 2026-11-13: languages
+
+English and Vietnamese are both implemented (switch on the title screen and in Settings, choice remembered). To add a language, copy `src/i18n/vi.js`, register it in `src/i18n/index.js` (`LANGS`, `tr`, `trTarget`, `trRange`).

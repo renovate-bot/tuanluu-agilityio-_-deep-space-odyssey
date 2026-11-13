@@ -1,8 +1,10 @@
 import { useStore } from '../../store/store.js';
+import { useT } from '../../i18n/index.js';
 
 export default function LoadingScreen() {
   const progress = useStore((s) => s.loadProgress);
   const label = useStore((s) => s.loadLabel);
+  const t = useT();
   const pct = Math.round(progress * 100);
   return (
     <div className="loading" role="status" aria-live="polite">
@@ -11,7 +13,7 @@ export default function LoadingScreen() {
       </div>
       <div className="loading__title">DEEP SPACE ODYSSEY</div>
       <div className="loading__bar" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={pct}><i style={{ transform: `scaleX(${progress})` }} /></div>
-      <div className="loading__label"><span>{label}</span><span>{pct}%</span></div>
+      <div className="loading__label"><span>{t(label)}</span><span>{pct}%</span></div>
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { tr } from '../../i18n/index.js';
 
 const CYAN = '#7fe9ff';
 const DIM = 'rgba(127,233,255,0.35)';
@@ -18,7 +19,7 @@ export class CockpitScreens {
       const material = new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0, toneMapped: false, blending: THREE.AdditiveBlending, depthWrite: false });
       return { kind, canvas, ctx: canvas.getContext('2d'), texture, material, next: i * 0.13, on: 0 };
     });
-    this.state = { sector: 'UNKNOWN', engine: 'STANDBY', dest: '—', warp: 0, heading: 0, pitch: 0 };
+    this.state = { lang: 'en', sector: 'UNKNOWN', engine: 'STANDBY', dest: '—', warp: 0, heading: 0, pitch: 0 };
     this.brightness = 0.85;
   }
 
@@ -53,11 +54,12 @@ export class CockpitScreens {
   draw(s, t) {
     const g = s.ctx;
     const st = this.state;
+    const L = (s) => tr(s, st.lang);
     g.textBaseline = 'alphabetic';
     if (s.kind === 'nav') {
-      this.frame(g, 'NAVIGATION');
+      this.frame(g, L('NAVIGATION'));
       g.font = '15px ui-monospace, Menlo, Consolas, monospace';
-      const rows = [['SECTOR', st.sector], ['DEST', st.dest], ['HDG', `${st.heading.toFixed(1)}°`], ['ELEV', `${st.pitch.toFixed(1)}°`], ['DRIVE', st.engine]];
+      const rows = [[L('SECTOR'), L(st.sector)], [L('DEST'), L(st.dest)], [L('HDG'), `${st.heading.toFixed(1)}°`], [L('ELEV'), `${st.pitch.toFixed(1)}°`], [L('DRIVE'), L(st.engine)]];
       rows.forEach(([k, v], i) => { g.fillStyle = DIM; g.fillText(k, 20, 74 + i * 26); g.fillStyle = CYAN; g.fillText(String(v).slice(0, 20), 96, 74 + i * 26); });
       // sweep scope
       const cx = 400, cy = 180, r = 84;
@@ -70,19 +72,19 @@ export class CockpitScreens {
       g.fillStyle = AMBER;
       for (let i = 0; i < 5; i++) { const aa = i * 2.4 + 0.7, rr = r * (0.25 + 0.14 * i); g.fillRect(cx + Math.cos(aa) * rr - 2, cy + Math.sin(aa) * rr - 2, 4, 4); }
     } else if (s.kind === 'systems') {
-      this.frame(g, 'SHIP SYSTEMS');
+      this.frame(g, L('SHIP SYSTEMS'));
       g.font = '14px ui-monospace, Menlo, Consolas, monospace';
       const bars = [['REACTOR', 0.72 + 0.25 * st.warp], ['LIFE SUPPORT', 0.96], ['HULL INTEGRITY', 1.0], ['COOLANT', 0.81 - 0.3 * st.warp], ['SHIELDING', 0.64 + 0.3 * st.warp]];
       bars.forEach(([k, v], i) => {
         const y = 70 + i * 44;
         const val = Math.max(0, Math.min(1, v + Math.sin(t * 0.7 + i) * 0.015));
-        g.fillStyle = DIM; g.fillText(k, 20, y);
+        g.fillStyle = DIM; g.fillText(L(k), 20, y);
         g.strokeStyle = DIM; g.strokeRect(20, y + 8, 380, 12);
         g.fillStyle = val < 0.6 ? AMBER : CYAN; g.fillRect(22, y + 10, 376 * val, 8);
         g.fillStyle = CYAN; g.fillText(`${Math.round(val * 100)}%`, 416, y + 19);
       });
     } else if (s.kind === 'spectrum') {
-      this.frame(g, 'SPECTRAL ANALYSIS');
+      this.frame(g, L('SPECTRAL ANALYSIS'));
       g.strokeStyle = CYAN; g.lineWidth = 2; g.beginPath();
       for (let x = 0; x <= 472; x += 4) {
         const u = x / 472;
@@ -94,9 +96,9 @@ export class CockpitScreens {
       for (let i = 0; i <= 8; i++) { g.beginPath(); g.moveTo(20 + i * 59, 60); g.lineTo(20 + i * 59, 230); g.stroke(); }
       g.fillStyle = DIM; g.font = '13px ui-monospace, Menlo, Consolas, monospace';
       g.fillText('H-α 656 nm', 130, 262); g.fillText('O III 501 nm', 280, 262);
-      g.fillStyle = AMBER; g.fillText('PASSIVE SCAN', 20, 296);
+      g.fillStyle = AMBER; g.fillText(L('PASSIVE SCAN'), 20, 296);
     } else {
-      this.frame(g, 'STELLAR CARTOGRAPHY');
+      this.frame(g, L('STELLAR CARTOGRAPHY'));
       g.fillStyle = CYAN;
       for (let i = 0; i < 70; i++) {
         const x = 20 + ((i * 97.3) % 472), y = 56 + ((i * 53.7) % 240);

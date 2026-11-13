@@ -11,12 +11,14 @@ import StatsReadout from './components/HUD/StatsReadout.jsx';
 import NavigationPanel from './components/Navigation/NavigationPanel.jsx';
 import TargetInfo from './components/PlanetInfo/TargetInfo.jsx';
 import HelpOverlay from './components/HUD/HelpOverlay.jsx';
+import { useT } from './i18n/index.js';
 
 export default function App() {
   const canvasRef = useRef(null);
   const actions = useEngine(canvasRef);
   const phase = useStore((s) => s.phase);
   const error = useStore((s) => s.error);
+  const t = useT();
 
   // global shortcuts
   useEffect(() => {
@@ -36,12 +38,12 @@ export default function App() {
 
   return (
     <ActionsContext.Provider value={actions}>
-      <canvas ref={canvasRef} className="stage" aria-label="Interactive 3D view from the observation deck of the starship Odyssey-01" />
+      <canvas ref={canvasRef} className="stage" aria-label={t('Interactive 3D view from the observation deck of the starship Odyssey-01')} />
       {error ? (
         <div className="fatal" role="alert">
           <h1>DEEP SPACE ODYSSEY</h1>
-          <p>{error}</p>
-          <button className="btn" onClick={() => location.reload()}>RELOAD</button>
+          <p>{t(error)}</p>
+          <button className="btn" onClick={() => location.reload()}>{t('RELOAD')}</button>
         </div>
       ) : (
         <>

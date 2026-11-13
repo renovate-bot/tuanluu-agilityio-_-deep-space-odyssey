@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../../store/store.js';
 import { useActions } from '../../hooks/useEngine.js';
+import { useT } from '../../i18n/index.js';
 import { IconClose } from './icons.jsx';
 
 const ROWS = [
@@ -17,6 +18,7 @@ const ROWS = [
 
 export default function HelpOverlay() {
   const actions = useActions();
+  const t = useT();
   const open = useStore((s) => s.panel === 'help');
   const [hint, setHint] = useState(true);
 
@@ -30,16 +32,16 @@ export default function HelpOverlay() {
     <>
       {hint && !open && (
         <div className="hint" role="note">
-          <span>DRAG to look</span><span>SCROLL to zoom</span><span>CLICK a world to scan</span>
-          <button className="icon-btn" onClick={() => setHint(false)} aria-label="Dismiss hint"><IconClose /></button>
+          <span>{t('DRAG to look')}</span><span>{t('SCROLL to zoom')}</span><span>{t('CLICK a world to scan')}</span>
+          <button className="icon-btn" onClick={() => setHint(false)} aria-label={t('Dismiss hint')}><IconClose /></button>
         </div>
       )}
       {open && (
-        <div className="modal" role="dialog" aria-modal="true" aria-label="Controls" onClick={() => actions.togglePanel('help')}>
+        <div className="modal" role="dialog" aria-modal="true" aria-label={t('Controls')} onClick={() => actions.togglePanel('help')}>
           <div className="panel modal__box" onClick={(e) => e.stopPropagation()}>
-            <div className="panel__head"><h2>CONTROLS</h2><button className="icon-btn" onClick={() => actions.togglePanel('help')} aria-label="Close"><IconClose /></button></div>
-            <dl className="keys">{ROWS.map(([k, v]) => (<div key={k}><dt>{k}</dt><dd>{v}</dd></div>))}</dl>
-            <p className="fine">Scale and distances are artistic, not physical. Objects marked FICTIONAL are invented for this voyage. All sound is in-cabin sound design; space itself is silent.</p>
+            <div className="panel__head"><h2>{t('CONTROLS')}</h2><button className="icon-btn" onClick={() => actions.togglePanel('help')} aria-label={t('Close')}><IconClose /></button></div>
+            <dl className="keys">{ROWS.map(([k, v]) => (<div key={k}><dt>{t(k)}</dt><dd>{t(v)}</dd></div>))}</dl>
+            <p className="fine">{t('Scale and distances are artistic, not physical. Objects marked FICTIONAL are invented for this voyage. All sound is in-cabin sound design; space itself is silent.')}</p>
           </div>
         </div>
       )}

@@ -24,7 +24,15 @@ function createStore(initial) {
 const prefersReducedMotion =
   typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+function initialLang() {
+  try { const saved = localStorage.getItem('dso.lang'); if (saved === 'en' || saved === 'vi') return saved; } catch (e) { /* storage blocked */ }
+  return typeof navigator !== 'undefined' && /^vi\b/i.test(navigator.language || '') ? 'vi' : 'en';
+}
+const lang0 = initialLang();
+if (typeof document !== 'undefined') document.documentElement.lang = lang0;
+
 export const store = createStore({
+  lang: lang0, // en | vi
   phase: 'loading', // loading | intro | boarding | explore
   loadProgress: 0,
   loadLabel: 'INITIALISING',
