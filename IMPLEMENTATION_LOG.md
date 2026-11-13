@@ -56,3 +56,34 @@ were **not** possible in this environment.
 - Translated: loading, intro, HUD, status/ship-AI lines, navigation, destinations, target cards (all 25 bodies, same figures, vi number format), audio, settings, help, errors, and the four cockpit canvas screens.
 - Left in English on purpose: DEEP SPACE ODYSSEY, ODYSSEY-01, invented proper names (Azure Veil, Helix Crown, Vespera...), WARP.
 - Checked headless at 1280x720 (low tier): switch on intro, boarding, nav panel, Earth target card, settings, help, console screens, persistence after reload, no clipped labels, clean console. Not checked: narrow phone widths in Vietnamese.
+
+
+## 2026-11-13 · Solar System enhancement
+
+### Stage 1 — audit
+Gap analysis recorded in PROJECT_STATUS.md. Decision: keep engine, store, cockpit API, warp and audio; replace the hand-placed planet "stages" with one orbital model.
+
+### Stage 2 — Solar System
+- `src/config/solar.js`: `YEAR`, `SUN`, `PLANETS`, `BELT` (orbit radius, period, inclination, node, phase, radius, vantage points, flyby waypoints), `orbitPosition`, `angularSpeed`.
+- `src/scenes/Universe.js`: `advance(dt)` moves every body each frame; live `positions[id]`; Sun body, glow sprite, orbit paths.
+- `src/objects/Stars/Sun.js`, `src/objects/Planets/Orbits.js` (new). `Planet.js`: zonal flow, shared tiling detail texture. `Rings.js`: thin-ring texture, shadow option. `AsteroidBelt.js`: `BeltRing`. `surfaces.js`: Mercury, Venus, Uranus, Neptune, Triton, Phobos.
+- `src/scenes/SolarSystem.js`: one `planetSector` builder for all eight planets and their moons, plus the belt.
+
+### Stage 3 — navigation
+- `Engine.anchor`: the ship is carried along with the body it is parked at, so orbital motion never reads as ship speed.
+- `src/systems/Vantage.js`: vantage points written in a Sun-facing frame (ring-plane frame for Saturn), so the lit side is always where the config expects it.
+- `NavigationSystem`: resolves a destination to live coordinates; drops out of warp far out and falls into far orbit.
+- `EventSystem`: `glide` (far ⇄ close) and `flyby` (spline pass, Saturn in the ring plane with a debris lane).
+- UI: nav tabs, flight brief with facts, `SystemMap.jsx` (key `O`), three distance buttons on the target card.
+
+### Stage 4 — cockpit, light, sound
+- `Cockpit.js`: eye moved to the glass, corner gussets, trim, overhead annunciators, leather seats, brighter warm cabin light.
+- `AudioSystem`: proximity opens the pad filter and adds rumble.
+
+### Stage 5 — checks and fixes found by looking at screenshots
+- Saturn's far orbit was exactly edge-on to the rings → views now use the ring-plane frame.
+- Flybys ended on the night side (black screen) → paths now sweep across the sunlit face.
+- Mars looked lumpy, gas giants grainy at the terminator → bump and detail strengths cut.
+- Sun was a white blob up close → glow sprite fades in close, surface gain lowered.
+- Orbit lines streaked across the windows from inside the ecliptic → opacity follows elevation above the plane.
+- Vietnamese added for every new string; nav rows no longer truncate names.

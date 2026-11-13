@@ -2,7 +2,7 @@ import { useStore } from '../../store/store.js';
 import { useT } from '../../i18n/index.js';
 
 // How good the link home is, by where the ship currently sits.
-const SIGNAL = { earth: 'STRONG', mars: 'STRONG', jupiter: 'NOMINAL', saturn: 'NOMINAL', nebula: 'ATTENUATED', start: 'ATTENUATED', exo: 'FAINT', deep: 'NO CARRIER', galaxy: 'NO CARRIER' };
+const SIGNAL = { earth: 'STRONG', mars: 'STRONG', venus: 'STRONG', mercury: 'NOMINAL', sun: 'ATTENUATED', belt: 'NOMINAL', overview: 'NOMINAL', jupiter: 'NOMINAL', saturn: 'NOMINAL', uranus: 'FAINT', neptune: 'FAINT', nebula: 'ATTENUATED', start: 'ATTENUATED', exo: 'FAINT', deep: 'NO CARRIER', galaxy: 'NO CARRIER' };
 
 export default function TopHUD() {
   const t = useT();

@@ -1,7 +1,7 @@
 import { useStore } from '../../store/store.js';
 import { useActions } from '../../hooks/useEngine.js';
 import { useT } from '../../i18n/index.js';
-import { IconView, IconWarp, IconNav, IconAudio, IconMuted, IconSettings, IconReset } from './icons.jsx';
+import { IconView, IconWarp, IconNav, IconMap, IconAudio, IconMuted, IconSettings, IconReset } from './icons.jsx';
 import AudioPanel from '../AudioControls/AudioPanel.jsx';
 import SettingsPanel from '../Settings/SettingsPanel.jsx';
 
@@ -41,6 +41,7 @@ export default function ControlBar() {
         <Tool label={t('VIEW')} active={panel === 'view'} onClick={() => actions.togglePanel('view')} disabled={!!travel}><IconView /></Tool>
         <Tool label={t(armed ? 'ENGAGE' : 'WARP DRIVE')} active={armed} onClick={actions.warp} disabled={!!travel}><IconWarp /></Tool>
         <Tool label={t('NAVIGATION')} active={navOpen} onClick={actions.toggleNav} disabled={!!travel}><IconNav /></Tool>
+        <Tool label={t('MAP')} active={panel === 'map'} onClick={() => actions.togglePanel('map')}><IconMap /></Tool>
         <Tool label={t('AUDIO')} active={panel === 'audio'} onClick={() => actions.togglePanel('audio')}>{muted ? <IconMuted /> : <IconAudio />}</Tool>
         <Tool label={t('SETTINGS')} active={panel === 'settings'} onClick={() => actions.togglePanel('settings')}><IconSettings /></Tool>
         <Tool label={t('RESET VIEW')} onClick={actions.resetView} disabled={!!travel}><IconReset /></Tool>

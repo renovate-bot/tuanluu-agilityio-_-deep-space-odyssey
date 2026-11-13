@@ -16,7 +16,8 @@ import { EventSystem } from '../systems/EventSystem.js';
 import { IntroSequence } from '../systems/IntroSequence.js';
 import { PickingSystem } from '../systems/PickingSystem.js';
 import { AudioSystem } from '../systems/AudioSystem.js';
-import { START, destinationById } from '../config/destinations.js';
+import { START, DESTINATIONS, destinationById } from '../config/destinations.js';
+import { PLANETS, BELT } from '../config/solar.js';
 import { WORLD } from '../config/world.js';
 import { formatRange } from '../config/celestial.js';
 import { v3 } from '../scenes/helpers.js';
@@ -50,6 +51,8 @@ export class Engine {
     // light that the outside world throws into the deck
     this.env = { lightPos: v3(WORLD[START.light.at]), color: new THREE.Color(...START.cabin), intensity: START.light.intensity };
     this.sectorLight = 1;
+    this.anchor = null; // live position of the body the ship is parked beside (it follows the body's orbit)
+    this._anchorPrev = new THREE.Vector3();
 
     this._prevPos = new THREE.Vector3();
     this._v = new THREE.Vector3();
@@ -217,6 +220,14 @@ export class Engine {
     const time = this.time;
     const { ship, universe, cockpit, camU, camC, camera } = this;
 
+    // orbits first, then carry the ship along with the body it is parked beside
+    universe.advance(dt);
+    if (this.anchor) {
+      this._v.copy(this.anchor).sub(this._anchorPrev);
+      ship.pos.add(this._v);
+      this._prevPos.add(this._v); // co-moving: orbital motion must not read as ship speed
+      this._anchorPrev.copy(this.anchor);
+    }
     this.anim.update(dt);
     camera.update(dt);
 
@@ -275,7 +286,10 @@ export class Engine {
     this.cockpitScene.environmentIntensity = 0.5 * this.cabinPower;
     cockpit.setWarp(warpVisual);
     if (this.mode === 'interior') cockpit.update(dt, time);
-    this.audio.update(dt, { warp: this.warp, nebula: neb, speed: ship.speed });
+    // how much of the sky the anchored body fills: drives the low "presence" layer of the soundscape
+    let near = 0;
+    if (this.anchor && this.anchorRadius) near = THREE.MathUtils.clamp(1.6 * this.anchorRadius / Math.max(ship.pos.distanceTo(this.anchor), 1) - 0.25, 0, 1);
+    this.audio.update(dt, { warp: this.warp, nebula: neb, speed: ship.speed, near });
 
     this.picking.update(dt);
     this.post.uniforms.uTime.value = time;
@@ -297,6 +311,14 @@ export class Engine {
       const p = this.universe.poiById(s.target.id);
       if (p) patch.targetRange = formatRange(Math.max(0, p.position.distanceTo(this.ship.pos) - p.radius), p.range);
     }
+    if (s.panel === 'map') {
+      // system map: heliocentric angles and the ship's own position, a few times a second
+      const sp = this.ship.pos;
+      patch.map = {
+        angles: { ...this.universe.angles, belt: this.universe.belt.angle },
+        ship: { angle: Math.atan2(-sp.z, sp.x), r: Math.hypot(sp.x, sp.z), y: sp.y },
+      };
+    }
     if (s.showStats) {
       const info = this.renderer.info.render;
       patch.stats = { fps: Math.round(this.quality.fps || 0), tier: this.quality.tier.label, pixelRatio: this.quality.ratio, calls: info.calls, tris: info.triangles, bloom: this.quality.bloom };
@@ -310,10 +332,21 @@ export class Engine {
 
   // ───────────────────────────────────────────────────────────── helpers ──
   /** Orientation whose bow (-Z) points from `from` to `to`. */
-  lookQuat(from, to, out = new THREE.Quaternion()) {
-    this._m.lookAt(from, to, THREE.Object3D.DEFAULT_UP);
+  lookQuat(from, to, out = new THREE.Quaternion(), up = THREE.Object3D.DEFAULT_UP) {
+    this._m.lookAt(from, to, up);
     return out.setFromRotationMatrix(this._m);
   }
+
+  /** Park relative to a moving position (or null for a fixed place). */
+  setAnchor(position) {
+    this.anchor = position || null;
+    if (position) this._anchorPrev.copy(position);
+    const p = position ? this.universe.pois.find((q) => q.position === position) : null;
+    this.anchorRadius = p ? p.radius : 0;
+  }
+
+  /** Navigation entry for a body id, if it has one. */
+  destinationFor(id) { return DESTINATIONS.find((d) => d.kind === 'body' && d.body === id) || null; }
 
   say(text, chime = true) {
     this.store.set({ message: { id: performance.now(), text } });
@@ -357,6 +390,13 @@ export class Engine {
       },
       focus: () => e.picking.focus(),
       observe: () => e.picking.observe(),
+      approach: (mode) => {
+        const p = e.picking.current();
+        if (!p || !p.body) return;
+        if (mode === 'flyby') e.events.flyby(p); else e.events.glide(p, mode);
+      },
+      /** From the system map: select a body (opens its card) without moving. */
+      selectBody: (id) => { const p = e.universe.poiById(id); if (p) { e.picking.select(p); } },
       clearTarget: () => { e.audio.play('ui'); s.set({ target: null, observing: false }); },
       resetView: () => { e.audio.play('ui'); e.camera.reset(); },
       setView: (name) => {

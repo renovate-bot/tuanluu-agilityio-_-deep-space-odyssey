@@ -342,11 +342,12 @@ export class AudioSystem {
   }
 
   // ───────────────────────────────────────────────────────────── frame ──
-  /** state: { warp 0..1, nebula 0..1, speed } */
+  /** state: { warp 0..1, nebula 0..1, speed, near 0..1 (how much of the sky the nearby body fills) } */
   update(dt, state) {
     if (!this.ready || this.ctx.state !== 'running') return;
     const ctx = this.ctx, t = ctx.currentTime;
     const m = MOODS[this.mood];
+    const near = state.near || 0;
 
     if (this.musicOn) {
       this.chordTimer -= dt;
@@ -354,7 +355,7 @@ export class AudioSystem {
       this.bellTimer -= dt;
       if (this.bellTimer <= 0) { this.bellTimer = m.bells * (0.5 + Math.random()); this.bell(); }
       // the pad opens up with the galaxy swell and inside nebulae; it ducks under the warp
-      const cutoff = m.cutoff * (1 + 1.6 * this.swell + 0.5 * state.nebula) * (1 - 0.4 * state.warp);
+      const cutoff = m.cutoff * (1 + 1.6 * this.swell + 0.5 * state.nebula + 0.45 * near) * (1 - 0.4 * state.warp);
       this.padFilter.frequency.setTargetAtTime(cutoff, t, 0.8);
       this.musicSend.gain.setTargetAtTime(0.55 + 0.3 * this.swell, t, 0.8);
     }
@@ -364,9 +365,10 @@ export class AudioSystem {
       const cruise = Math.min(1, state.speed / 2500) * 0.25;
       this.engA.frequency.setTargetAtTime(46 * (1 + 0.9 * w + 0.25 * cruise), t, 0.25);
       this.engB.frequency.setTargetAtTime(92.6 * (1 + 0.9 * w + 0.25 * cruise), t, 0.25);
-      this.engLp.frequency.setTargetAtTime(170 + 900 * w + 200 * cruise, t, 0.25);
+      this.engLp.frequency.setTargetAtTime(170 + 900 * w + 200 * cruise - 40 * near, t, 0.25);
       this.engNoiseLp.frequency.setTargetAtTime(140 + 700 * w + 160 * cruise, t, 0.25);
-      this.engNoiseGain.gain.setTargetAtTime(0.22 + 0.5 * w + 0.2 * cruise, t, 0.25);
+      // close to a world the hull picks up a deeper, fuller rumble
+      this.engNoiseGain.gain.setTargetAtTime(0.22 + 0.5 * w + 0.2 * cruise + 0.3 * near, t, 0.8);
       // idle electronics: an occasional quiet chirp from a console
       this.blipTimer -= dt;
       if (this.blipTimer <= 0 && w < 0.05) {

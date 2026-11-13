@@ -33,3 +33,13 @@ Ordered by priority. Read PROJECT_STATUS.md first and confirm against the source
 4. Deploy: any static host; `dist/` uses relative paths.
 
 - Vietnamese: check wording with a native reader on real devices, and check narrow phone layouts with the longer labels.
+
+
+## After the Solar System enhancement (2026-11-13)
+1. **Measure on a real GPU** (still blocking): FPS at each planet, in the Saturn ring flyby and in the belt, per tier.
+2. Real textures: if licences are confirmed, add optional NASA/JPL maps for Earth, Moon, Mars, Mercury behind a `textures` setting, keeping procedural as fallback.
+3. Review the flybys of Mercury, Mars, Uranus, Neptune and the belt one by one; give each its own path like Jupiter and Saturn.
+4. Sun close-up: richer granulation, prominences on the limb, tame bloom.
+5. Cockpit: modelled seats and consoles (GLTF or more careful primitives), glass reflections of the instrument glow.
+6. Optional bodies: Pluto and Charon as a dwarf-planet destination, Kuiper Belt ring.
+7. Unload planet sectors that are far away on the Low tier.

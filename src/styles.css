@@ -187,3 +187,42 @@ kbd { font: 10px var(--mono); padding: 1px 5px; border: 1px solid var(--line-sof
 .intro__lang { position: absolute; right: var(--pad); top: var(--pad); background: rgba(6, 14, 24, 0.35); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
 :lang(vi) .intro__tag { letter-spacing: 0.12em; }
 :lang(vi) .tool span { letter-spacing: 0.1em; }
+
+/* ── navigation: tabs, compact rows ──────────────────────── */
+.nav__tabs { display: grid; grid-template-columns: 1fr 1fr auto; border: 1px solid var(--line-soft); margin-bottom: 8px; }
+.nav__tabs button { padding: 7px 10px; font-size: 10px; letter-spacing: 0.14em; color: var(--muted); }
+.nav__tabs button + button { border-left: 1px solid var(--line-soft); }
+.nav__tabs button.is-on { background: rgba(143, 233, 255, 0.16); color: var(--cyan); }
+.nav__item { grid-template-columns: 22px minmax(0, 1fr) auto auto; padding: 6px 6px; }
+.nav__item > small { font: 9px var(--mono); letter-spacing: 0.08em; color: var(--muted); white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+.nav__name { display: block; line-height: 1.35; letter-spacing: 0.12em; }
+.nav__brief .target__type { margin-bottom: 0; }
+.nav__brief .target__facts { margin-bottom: 0; }
+
+/* ── target card: observation distances ──────────────────── */
+.target__modes { display: grid; gap: 6px; margin-top: 14px; }
+.target__modes .btn { text-align: left; display: flex; justify-content: space-between; }
+.target__modes .btn::after { content: '›'; color: var(--muted); }
+.target__actions--one { grid-template-columns: 1fr; margin-top: 6px; }
+
+/* ── system map ──────────────────────────────────────────── */
+.map__box { width: min(1040px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: rgba(4, 10, 18, 0.9); }
+.map__body { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 18px; align-items: start; }
+.map__svg { width: 100%; height: auto; max-height: calc(100vh - 130px); display: block; }
+.map__grid { stroke: rgba(143, 233, 255, 0.06); stroke-width: 1; }
+.map__orbit { fill: none; stroke: rgba(143, 233, 255, 0.22); stroke-width: 1; }
+.map__orbit.is-selected { stroke: var(--cyan); }
+.map__belt { fill: none; stroke: rgba(190, 175, 160, 0.16); stroke-width: 14; stroke-dasharray: 1 5; }
+.map__node { cursor: pointer; outline: none; }
+.map__node:hover .map__label, .map__node:focus-visible .map__label { fill: var(--cyan); }
+.map__label { font: 9.5px var(--mono); letter-spacing: 0.12em; fill: var(--muted); pointer-events: none; }
+.map__label--ship { fill: var(--amber); }
+.map__ring { fill: none; stroke: var(--cyan); stroke-width: 1.2; }
+.map__here { fill: none; stroke: var(--amber); stroke-width: 1; stroke-dasharray: 3 3; }
+.map__ship path { fill: var(--amber); }
+.map__course { stroke: var(--amber); stroke-width: 1; stroke-dasharray: 4 5; }
+.map__side { display: grid; gap: 12px; }
+.map__side .nav__brief { margin-top: 0; padding-top: 0; border-top: 0; }
+.map__note { border-top: 1px solid var(--line-soft); padding-top: 10px; }
+.map__out { color: var(--amber); }
+@media (max-width: 820px) { .map__body { grid-template-columns: 1fr; } }

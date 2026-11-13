@@ -11,6 +11,7 @@ import StatsReadout from './components/HUD/StatsReadout.jsx';
 import NavigationPanel from './components/Navigation/NavigationPanel.jsx';
 import TargetInfo from './components/PlanetInfo/TargetInfo.jsx';
 import HelpOverlay from './components/HUD/HelpOverlay.jsx';
+import SystemMap from './components/Navigation/SystemMap.jsx';
 import { useT } from './i18n/index.js';
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
       else if (e.code === 'KeyN') actions.toggleNav();
       else if (e.code === 'KeyM') actions.toggleMute();
       else if (e.code === 'KeyH') actions.togglePanel('help');
+      else if (e.code === 'KeyO' && phase === 'explore') actions.togglePanel('map');
       else if (e.code === 'Space' && (phase === 'boarding' || phase === 'explore')) { e.preventDefault(); actions.skip(); }
     };
     window.addEventListener('keydown', onKey);
@@ -58,6 +60,7 @@ export default function App() {
               <ControlBar />
               <HoverLabel />
               <HelpOverlay />
+              <SystemMap />
               <StatsReadout />
             </>
           )}

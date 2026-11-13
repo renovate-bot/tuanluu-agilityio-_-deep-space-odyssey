@@ -4,7 +4,9 @@ import { CockpitScreens } from './CockpitScreens.js';
 import { disposeObject } from '../../utils/dispose.js';
 
 // Deck dimensions in metres. Bow is -Z. The observer stands at EYE.
-export const EYE = new THREE.Vector3(0, 1.65, 0.6);
+// The observer stands close to the glass so the centre pane fills the field of view: the frame is felt at
+// the edges rather than looked at.
+export const EYE = new THREE.Vector3(0, 1.62, -0.7);
 const W = 4.2; // half width
 const ZF = -3.4; // front glass plane
 const ZA = -1.8; // where the angled panes meet the side walls
@@ -14,6 +16,27 @@ const SILL = 0.8, HEAD = 3.0, CEIL = 3.25;
 const ROOF_Z = -0.9; // rear edge of the roof glazing
 
 const X_AXIS = new THREE.Vector3(1, 0, 0);
+
+/** Emissive map for the overhead panels: a grid of small amber / cyan / white legends on black. */
+function makeAnnunciatorTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 256;
+  const g = c.getContext('2d');
+  g.fillStyle = '#000'; g.fillRect(0, 0, 256, 256);
+  let seed = 7;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  for (let y = 0; y < 8; y++) for (let x = 0; x < 10; x++) {
+    const r = rnd();
+    if (r < 0.28) continue;
+    g.fillStyle = r > 0.9 ? '#ff5a3a' : r > 0.62 ? '#ffb45a' : r > 0.4 ? '#7fe9ff' : '#3a4a58';
+    g.globalAlpha = 0.35 + rnd() * 0.65;
+    g.fillRect(8 + x * 24.5, 10 + y * 30, 17, r > 0.75 ? 8 : 14);
+  }
+  g.globalAlpha = 1;
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
 
 /**
  * Observation deck of ODYSSEY-01. Windows are genuine openings between structural members, so everything
@@ -35,6 +58,8 @@ export class Cockpit {
       floor: new THREE.MeshStandardMaterial({ color: 0x232830, metalness: 0.75, roughness: 0.42, map: floorTex, bumpMap: floorTex, bumpScale: 0.3, envMapIntensity: 0.5 }),
       console: new THREE.MeshStandardMaterial({ color: 0x262b34, metalness: 0.7, roughness: 0.45, envMapIntensity: 0.4 }),
       seat: new THREE.MeshStandardMaterial({ color: 0x08090b, metalness: 0.1, roughness: 0.9, envMapIntensity: 0.1 }),
+      leather: new THREE.MeshStandardMaterial({ color: 0x6b452c, metalness: 0.0, roughness: 0.62, envMapIntensity: 0.25 }),
+      trim: new THREE.MeshStandardMaterial({ color: 0x8a8f98, metalness: 1.0, roughness: 0.28, envMapIntensity: 0.9 }),
       shutter: new THREE.MeshStandardMaterial({ color: 0x2a2f38, metalness: 0.85, roughness: 0.4, map: wallTex, side: THREE.DoubleSide }),
       warm: new THREE.MeshBasicMaterial({ color: 0x000000, toneMapped: false }),
       cyan: new THREE.MeshBasicMaterial({ color: 0x000000, toneMapped: false }),
@@ -212,15 +237,58 @@ export class Cockpit {
     holo.add(globe, hRing, cone);
     this.holoGlobe = globe; this.holoRing = hRing;
 
-    // crew seats: dark silhouettes that give the view a foreground
+    // crew seats: leather shells either side of the observer, low in the corners of the view
     for (const s of [-1, 1]) {
-      const sx = s * 1.75, sz = -1.85;
-      box(0.14, 0.4, 0.14, M.frame, sx, 0.2, sz);
-      box(0.52, 0.1, 0.52, M.seat, sx, 0.45, sz);
-      box(0.48, 0.62, 0.09, M.seat, sx, 0.8, sz + 0.27, { rx: -0.16 });
-      box(0.24, 0.16, 0.08, M.seat, sx, 1.17, sz + 0.33, { rx: -0.16 });
-      for (const a of [-1, 1]) box(0.05, 0.04, 0.36, M.frame, sx + a * 0.28, 0.6, sz - 0.02);
+      const seat = new THREE.Group();
+      seat.position.set(s * 1.62, 0, -2.28);
+      seat.rotation.y = -s * 0.2;
+      g.add(seat);
+      const P = { parent: seat };
+      box(0.16, 0.36, 0.16, M.frame, 0, 0.18, 0, P);
+      box(0.6, 0.06, 0.6, M.frame, 0, 0.38, 0, P);
+      box(0.56, 0.13, 0.56, M.leather, 0, 0.47, 0, P);
+      box(0.56, 0.74, 0.12, M.leather, 0, 0.9, 0.3, { ...P, rx: -0.14 });
+      box(0.6, 0.78, 0.04, M.frame, 0, 0.9, 0.37, { ...P, rx: -0.14 });
+      box(0.3, 0.2, 0.11, M.leather, 0, 1.36, 0.37, { ...P, rx: -0.14 });
+      for (let i = 0; i < 3; i++) box(0.5, 0.012, 0.125, M.frame, 0, 0.7 + i * 0.19, 0.3 - i * 0.027, { ...P, rx: -0.14, noShadow: true }); // quilting seams
+      for (const a of [-1, 1]) { box(0.07, 0.05, 0.44, M.frame, a * 0.33, 0.66, 0.02, P); box(0.09, 0.03, 0.3, M.leather, a * 0.33, 0.7, 0.0, P); }
     }
+
+    // ── window dressing: corner gussets, bright trim and an overhead instrument panel ──
+    const CH = 0.5;
+    for (const s of [-1, 1]) {
+      beam([s * XC, SILL + CH, ZF], [s * (XC - CH), SILL, ZF], 0.16, M.frame, 0.22);
+      beam([s * XC, HEAD - CH, ZF], [s * (XC - CH), HEAD, ZF], 0.16, M.frame, 0.22);
+      // filled corners so the pane reads as a rounded opening
+      for (const [y0, dir] of [[SILL, 1], [HEAD, -1]]) {
+        const tri = new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(-s * CH, 0), new THREE.Vector2(0, dir * CH)]);
+        const m = new THREE.Mesh(new THREE.ShapeGeometry(tri), M.frame);
+        m.material = M.frame; m.position.set(s * XC, y0, ZF + 0.02);
+        const m2 = m.clone(); m2.rotation.y = Math.PI; m2.position.z = ZF + 0.021; m2.scale.x = -1;
+        g.add(m, m2);
+      }
+      // side-pane gussets
+      const ax = s * (XC + (W - XC) * 0.25), az = ZF + (ZA - ZF) * 0.25;
+      beam([s * XC, HEAD - 0.4, ZF], [ax, HEAD, az], 0.12, M.frame, 0.2);
+      beam([s * XC, SILL + 0.4, ZF], [ax, SILL, az], 0.12, M.frame, 0.2);
+    }
+    // polished inner lip along sill and header
+    beam([-XC + 0.1, SILL + 0.09, ZF + 0.14], [XC - 0.1, SILL + 0.09, ZF + 0.14], 0.02, M.trim, 0.03);
+    beam([-XC + 0.1, HEAD - 0.08, ZF + 0.12], [XC - 0.1, HEAD - 0.08, ZF + 0.12], 0.02, M.trim, 0.03);
+    // overhead panel: rows of small annunciators above the observer
+    const ohTex = makeAnnunciatorTexture();
+    this._ohTex = ohTex;
+    this.overheadMat = new THREE.MeshBasicMaterial({ map: ohTex, color: 0x000000, toneMapped: false });
+    for (const s of [-1, 1]) {
+      box(1.5, 0.12, 1.5, M.console, s * 3.25, CEIL - 0.2, -1.75, { rz: s * 0.5 });
+      const lit = new THREE.Mesh(new THREE.PlaneGeometry(1.3, 1.3), this.overheadMat);
+      lit.position.set(s * 3.22, CEIL - 0.275, -1.75); lit.rotation.set(Math.PI / 2, s * 0.5, 0);
+      g.add(lit);
+    }
+    box(2.6, 0.1, 0.9, M.console, 0, CEIL - 0.06, -0.3);
+    const litC = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.75), this.overheadMat);
+    litC.position.set(0, CEIL - 0.115, -0.3); litC.rotation.x = Math.PI / 2;
+    g.add(litC);
 
     // ── glazing ──────────────────────────────────────────────────────────────
     this.glassUniforms = { uTint: { value: new THREE.Color(0.3, 0.5, 1.0) }, uPower: { value: 0 }, uReflect: { value: 1 } };
@@ -268,7 +336,7 @@ export class Cockpit {
     for (const s of [-1, 1]) pane(SW.z2 - SW.z1, SW.y2 - SW.y1, [s * W, (SW.y1 + SW.y2) / 2, (SW.z1 + SW.z2) / 2], [0, -s * Math.PI / 2, 0]);
 
     // ── lights ───────────────────────────────────────────────────────────────
-    this.ambient = new THREE.AmbientLight(0x8fa8c8, 0);
+    this.ambient = new THREE.AmbientLight(0xb0a8a8, 0);
     this.consoleLight = new THREE.PointLight(0x58d8ff, 0, 9, 1.4);
     this.consoleLight.position.set(0, 1.25, ZF + 1.1);
     this.ceilLights = [0.3, 2.6].map((z) => {
@@ -318,10 +386,11 @@ export class Cockpit {
     const p = this.power, w = this.warp;
     const M = this.mats;
     // during warp the warm lights dim and the deck goes cold blue
-    this.ambient.intensity = 0.42 * p;
+    this.ambient.intensity = 0.8 * p;
+    if (this.overheadMat) this.overheadMat.color.setScalar(0.85 * p * (1 - 0.5 * w));
     this.consoleLight.intensity = p * (5.0 + 5.0 * w);
     this.consoleLight.color.setRGB(0.35 + 0.1 * w, 0.85 - 0.25 * w, 1.0);
-    for (const l of this.ceilLights) l.intensity = p * 4.4 * (1 - 0.75 * w);
+    for (const l of this.ceilLights) l.intensity = p * 7.5 * (1 - 0.75 * w);
     M.warm.color.setRGB(0.9 * p * (1 - 0.7 * w), 0.72 * p * (1 - 0.7 * w), 0.5 * p * (1 - 0.5 * w));
     M.cyan.color.setRGB(0.1 * p + 0.3 * w * p, 0.5 * p, 0.7 * p + 0.9 * w * p);
     M.amber.color.setRGB(0.8 * p, 0.36 * p, 0.08 * p);
@@ -365,6 +434,7 @@ export class Cockpit {
     this.screens.dispose();
     this.glassMat.dispose();
     for (const t of this._owned) t.dispose();
+    if (this._ohTex) this._ohTex.dispose();
     disposeObject(this.group);
   }
 }

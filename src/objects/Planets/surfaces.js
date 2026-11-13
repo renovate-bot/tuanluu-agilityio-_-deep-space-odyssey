@@ -237,4 +237,116 @@ export const SURFACES = {
       return vec4(col * (0.9 + cr), clamp(0.5 + cr + 0.2 * (n - 0.5), 0.0, 1.0));
     }
     vec4 extra(vec3 p){ return vec4(0.0); }`,
+
+  mercury: /* glsl */ `
+    float mercH(vec3 p){
+      float base = fbm(p * 1.8 + 4.0, 6) * 0.5 + 0.5;
+      float cr = craters(p, 3.0, 0.45) * 0.2 + craters(p, 7.0, 0.7) * 0.16 + craters(p, 16.0, 0.8) * 0.1 + craters(p, 37.0, 0.8) * 0.05 + craters(p, 80.0, 0.7) * 0.025;
+      float scarps = ridged(p * 3.0 + 12.0, 4) * 0.12;
+      return clamp(0.42 + base * 0.3 + cr + scarps, 0.0, 1.0);
+    }
+    vec4 surface(vec3 p){
+      float h = mercH(p);
+      float tone = fbm(p * 2.4 + 9.0, 5) * 0.5 + 0.5;
+      vec3 col = mix(vec3(0.16, 0.155, 0.15), vec3(0.36, 0.34, 0.32), tone);
+      // smooth volcanic plains are a touch browner; fresh ejecta rays are bright
+      col = mix(col, vec3(0.3, 0.26, 0.22), smoothstep(0.55, 0.75, fbm(p * 1.2 + 21.0, 4) * 0.5 + 0.5) * 0.6);
+      float rays = pow(max(ridged(p * 9.0 + 30.0, 3) - 0.55, 0.0) * 2.2, 2.0) * smoothstep(0.6, 0.9, fbm(p * 2.0 + 50.0, 3) * 0.5 + 0.5);
+      col += vec3(0.25, 0.25, 0.26) * rays;
+      col *= 0.6 + 0.75 * h;
+      return vec4(col, h);
+    }
+    vec4 extra(vec3 p){ return vec4(0.0, 0.0, 0.0, 1.0); }`,
+
+  venus: /* glsl */ `
+    // Nothing of the surface is visible from space: both layers are cloud. The lower deck is baked as
+    // "surface", the faster upper haze as the cloud channel, so the two drift against each other.
+    vec4 surface(vec3 p){
+      float lat = p.y;
+      vec3 w = p + 0.16 * vec3(fbm(p * 1.6 + 3.0, 4), 0.0, fbm(p * 1.6 + 8.0, 4));
+      // the planet-wide "Y" / chevron pattern: bands swept back towards the poles
+      float lon = atan(w.z, w.x);
+      float sweep = lon + 2.2 * abs(lat);
+      float streak = fbm(vec3(cos(sweep) * 1.6, lat * 7.0, sin(sweep) * 1.6) + 5.0, 6) * 0.5 + 0.5;
+      float fine = fbm(vec3(cos(sweep) * 5.0, lat * 26.0, sin(sweep) * 5.0) + 11.0, 5) * 0.5 + 0.5;
+      float t = clamp(0.62 * streak + 0.38 * fine, 0.0, 1.0);
+      vec3 col = mix(vec3(0.62, 0.44, 0.2), vec3(0.88, 0.74, 0.46), smoothstep(0.25, 0.7, t));
+      col = mix(col, vec3(0.97, 0.9, 0.72), smoothstep(0.6, 0.95, t) * 0.75);
+      col = mix(col, vec3(0.9, 0.8, 0.6), smoothstep(0.7, 0.98, abs(lat)) * 0.6); // bright polar hoods
+      return vec4(col, 0.5 + 0.25 * (t - 0.5));
+    }
+    vec4 extra(vec3 p){
+      float lat = p.y;
+      float lon = atan(p.z, p.x);
+      float sweep = lon + 1.6 * abs(lat) + 0.3 * fbm(p * 2.0 + 60.0, 3);
+      float c = fbm(vec3(cos(sweep) * 2.4, lat * 10.0, sin(sweep) * 2.4) + 70.0, 6) * 0.5 + 0.5;
+      return vec4(0.0, 0.0, smoothstep(0.42, 0.85, c) * 0.75, 1.0);
+    }`,
+
+  uranus: /* glsl */ `
+    vec4 surface(vec3 p){
+      float turb = fbm(p * vec3(2.0, 7.0, 2.0) + 4.0, 5);
+      float y = p.y + 0.01 * turb;
+      float bands = sin(y * 9.0) * 0.5 + sin(y * 21.0 + 1.1) * 0.25 + 0.25 * turb;
+      float t = bands * 0.5 + 0.5;
+      vec3 col = mix(vec3(0.42, 0.68, 0.72), vec3(0.6, 0.83, 0.85), smoothstep(0.2, 0.8, t));
+      // brighter polar cap, slightly darker collar
+      float cap = smoothstep(0.55, 0.9, y);
+      col = mix(col, vec3(0.74, 0.9, 0.9), cap * 0.6);
+      col = mix(col, vec3(0.36, 0.6, 0.66), exp(-pow((y - 0.42) / 0.07, 2.0)) * 0.35);
+      return vec4(col, 0.5 + 0.1 * turb);
+    }
+    vec4 extra(vec3 p){
+      float c = fbm(p * vec3(6.0, 30.0, 6.0) + 33.0, 5) * 0.5 + 0.5;
+      return vec4(0.0, 0.0, smoothstep(0.74, 0.92, c) * 0.35, 1.0);
+    }`,
+
+  neptune: /* glsl */ `
+    vec2 nepSpot(vec3 p){
+      float lon = atan(p.z, p.x);
+      return vec2(mod(lon + 3.14159 - 0.6, 6.28318) - 3.14159, asin(clamp(p.y, -1.0, 1.0)) + 0.36);
+    }
+    vec4 surface(vec3 p){
+      vec3 w = p + 0.03 * vec3(snoise(p * vec3(4.0, 12.0, 4.0)), 0.0, snoise(p * vec3(4.0, 12.0, 4.0) + 7.0));
+      float turb = fbm(w * vec3(3.0, 12.0, 3.0) + 2.0, 6);
+      float y = p.y + 0.025 * turb;
+      float bands = snoise(vec3(2.3, y * 4.5, 1.1)) * 0.6 + snoise(vec3(6.2, y * 12.0, 3.5)) * 0.3 + snoise(vec3(1.1, y * 30.0, 8.2)) * 0.1;
+      float t = smoothstep(0.2, 0.8, bands * 0.5 + 0.5);
+      vec3 col = mix(vec3(0.02, 0.06, 0.3), vec3(0.07, 0.2, 0.62), t);
+      col = mix(col, vec3(0.16, 0.36, 0.8), smoothstep(0.7, 1.0, t) * 0.6);
+      float spot = length(nepSpot(p) / vec2(0.2, 0.11));
+      col = mix(col, vec3(0.012, 0.03, 0.16), 1.0 - smoothstep(0.7, 1.05, spot)); // dark storm
+      col = mix(col, vec3(0.03, 0.07, 0.26), smoothstep(0.75, 1.0, abs(p.y)) * 0.6);
+      return vec4(col, 0.5 + 0.2 * turb);
+    }
+    vec4 extra(vec3 p){
+      // bright methane-ice cirrus: thin streaks stretched along latitude, plus a companion cloud beside the storm
+      float c = fbm(p * vec3(5.0, 44.0, 5.0) + 21.0, 5) * 0.5 + 0.5;
+      float streaks = smoothstep(0.7, 0.9, c) * smoothstep(0.75, 0.2, abs(p.y));
+      vec2 sp = nepSpot(p);
+      float comp = exp(-pow(length((sp - vec2(0.0, -0.14)) / vec2(0.22, 0.025)), 2.0));
+      return vec4(0.0, 0.0, clamp(streaks * 0.8 + comp * 0.9, 0.0, 1.0), 1.0);
+    }`,
+
+  triton: /* glsl */ `
+    vec4 surface(vec3 p){
+      float n = fbm(p * 2.2 + 3.0, 6) * 0.5 + 0.5;
+      // "cantaloupe" terrain: tightly packed dimples
+      float cant = 1.0 - abs(snoise(p * 16.0)) * abs(snoise(p * 23.0 + 4.0));
+      vec3 col = mix(vec3(0.62, 0.56, 0.52), vec3(0.86, 0.8, 0.78), n);
+      col = mix(col, vec3(0.9, 0.78, 0.76), smoothstep(-0.1, -0.5, p.y) * 0.6); // pinkish nitrogen-ice cap
+      col *= 0.8 + 0.2 * cant;
+      float cr = craters(p, 9.0, 0.3) * 0.2;
+      return vec4(col + max(cr, 0.0) * 0.2, clamp(0.5 + 0.2 * (cant - 0.5) + cr, 0.0, 1.0));
+    }
+    vec4 extra(vec3 p){ return vec4(0.25, 0.0, 0.0, 1.0); }`,
+
+  phobos: /* glsl */ `
+    vec4 surface(vec3 p){
+      float h = 0.5 + fbm(p * 2.0, 5) * 0.25 + craters(p, 2.5, 0.6) * 0.3 + craters(p, 6.0, 0.8) * 0.16 + craters(p, 14.0, 0.8) * 0.08;
+      float grooves = pow(1.0 - abs(snoise(vec3(p.x * 9.0, p.y * 1.5, p.z * 9.0))), 8.0) * 0.12;
+      vec3 col = mix(vec3(0.1, 0.085, 0.075), vec3(0.24, 0.2, 0.17), fbm(p * 3.0 + 9.0, 4) * 0.5 + 0.5);
+      return vec4(col * (0.6 + 0.7 * clamp(h, 0.0, 1.0)), clamp(h - grooves, 0.0, 1.0));
+    }
+    vec4 extra(vec3 p){ return vec4(0.0, 0.0, 0.0, 1.0); }`,
 };

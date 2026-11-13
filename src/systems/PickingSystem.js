@@ -73,10 +73,7 @@ export class PickingSystem {
     const e = this.e;
     if (!p) return;
     e.audio.play('select');
-    e.store.set({
-      target: { id: p.id, name: p.name, type: p.type, fictional: !!p.fictional, description: p.description, facts: p.facts || [], more: p.more || '' },
-      observing: false, hover: null, navOpen: false, panel: null,
-    });
+    e.store.set({ target: this.snapshot(p), observing: false, hover: null, navOpen: false, panel: null });
     e.pushUi();
   }
 
@@ -133,41 +130,45 @@ export class PickingSystem {
     }
   }
 
+  cancelMove() { if (this.token) { this.token.cancel(); this.token = null; } }
+
   /** Move to a good vantage point for the target and open the extended read-out. */
   observe() {
     const e = this.e;
     const p = this.current();
     if (!p || e.nav.busy) return;
+    if (p.body) { e.store.set({ observing: true }); e.events.glide(p, 'close'); return; }
     const o = p.observe;
     const d = p.observeDist || p.radius;
-    // keep the vantage on the same side of the body that the ship is already on
-    const vantage = new THREE.Vector3(o[0], o[1], o[2]).multiplyScalar(d).add(p.position);
-    const look = p.position.clone();
-    const dist = vantage.distanceTo(e.ship.pos);
+    const anchor = p.position; // live for moons, fixed for everything else
+    const offset = new THREE.Vector3(o[0], o[1], o[2]).multiplyScalar(d);
+    const dist = this._o.copy(anchor).add(offset).distanceTo(e.ship.pos);
     e.store.set({ observing: true });
     if (dist > Math.max(40000, p.radius * 30)) {
       // too far for thrusters: make it a jump
       const cur = e.currentDest;
+      const snap = this.snapshot(p);
       e.nav.travel({
-        id: `observe:${p.id}`, transient: true, name: p.name, sector: cur.sector, sectors: [], poi: p.id,
-        pos: vantage.toArray(), look: look.toArray(), mood: cur.mood, cabin: cur.cabin, light: cur.light,
-      }).then(() => { e.store.set({ observing: true, target: e.store.get().target || this.snapshot(p) }); });
-      this._pending = p;
+        id: `observe:${p.id}`, kind: 'poi', transient: true, name: p.name, sector: cur.sector, sectors: [], poi: p.id,
+        anchor, offset, mood: cur.mood, cabin: cur.cabin, light: cur.light,
+      }).then(() => { e.store.set({ observing: true, target: e.store.get().target || snap }); });
       return;
     }
     e.audio.play('confirm');
     e.events.cancel();
-    if (this.token) this.token.cancel();
+    this.cancelMove();
     const token = (this.token = e.anim.token());
-    const from = e.ship.pos.clone();
+    e.setAnchor(anchor);
+    const off0 = e.ship.pos.clone().sub(anchor);
     const q0 = e.ship.quat.clone();
-    const q1 = e.lookQuat(vantage, look, new THREE.Quaternion());
+    const q1 = new THREE.Quaternion();
     e.camera.lookTo(0, 0, 50);
-    e.store.set({ engineStatus: 'MANOEUVRING' });
+    e.store.set({ engineStatus: 'MANOEUVRING', viewMode: null });
     e.say(`Moving to observation position: ${p.name}.`, false);
     const dur = e.reducedMotion ? 2 : clamp(3 + dist / (p.radius * 2.5), 4, 9);
     e.anim.to(dur, (t) => {
-      e.ship.pos.lerpVectors(from, vantage, t);
+      e.ship.pos.copy(anchor).add(this._v.lerpVectors(off0, offset, t));
+      e.lookQuat(e.ship.pos, anchor, q1);
       e.ship.quat.slerpQuaternions(q0, q1, Math.min(1, t * 1.25));
       e.thrust = 0.3 + 0.4 * Math.sin(Math.PI * t);
     }, ease.inOutCubic, token).then(() => {
@@ -176,7 +177,10 @@ export class PickingSystem {
   }
 
   snapshot(p) {
-    return { id: p.id, name: p.name, type: p.type, fictional: !!p.fictional, description: p.description, facts: p.facts || [], more: p.more || '' };
+    return {
+      id: p.id, name: p.name, type: p.type, fictional: !!p.fictional, description: p.description, facts: p.facts || [], more: p.more || '',
+      modes: p.body ? (p.body.flyby ? ['far', 'close', 'flyby'] : ['far', 'close']) : null,
+    };
   }
 
   dispose() {

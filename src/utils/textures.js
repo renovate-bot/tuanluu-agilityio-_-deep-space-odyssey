@@ -63,3 +63,41 @@ export function makeWindowTexture({ seed = 3, w = 512, h = 64, rows = 2, cols = 
   tex.colorSpace = THREE.SRGBColorSpace;
   return tex;
 }
+
+let _detail = null;
+/** Shared tiling noise (three independent channels, four octaves each) used for close-range surface detail. */
+export function detailTexture() {
+  if (_detail) return _detail;
+  const N = 256;
+  const data = new Uint8Array(N * N * 4);
+  for (let ch = 0; ch < 3; ch++) {
+    const rand = mulberry32(900 + ch * 17);
+    const acc = new Float32Array(N * N);
+    let amp = 0.5, total = 0;
+    for (const cells of [8, 16, 32, 64]) {
+      const lat = new Float32Array(cells * cells);
+      for (let i = 0; i < lat.length; i++) lat[i] = rand();
+      const k = cells / N;
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+        const fx = x * k, fy = y * k;
+        const x0 = Math.floor(fx), y0 = Math.floor(fy);
+        const tx = fx - x0, ty = fy - y0;
+        const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+        const x1 = (x0 + 1) % cells, y1 = (y0 + 1) % cells;
+        const a = lat[y0 * cells + x0], b = lat[y0 * cells + x1], c = lat[y1 * cells + x0], d = lat[y1 * cells + x1];
+        acc[y * N + x] += amp * (a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy);
+      }
+      total += amp; amp *= 0.5;
+    }
+    for (let i = 0; i < N * N; i++) data[i * 4 + ch] = Math.max(0, Math.min(255, ((acc[i] / total - 0.5) * 1.9 + 0.5) * 255));
+  }
+  for (let i = 0; i < N * N; i++) data[i * 4 + 3] = 255;
+  const tex = new THREE.DataTexture(data, N, N, THREE.RGBAFormat);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.minFilter = THREE.LinearMipmapLinearFilter; tex.magFilter = THREE.LinearFilter;
+  tex.generateMipmaps = true; tex.anisotropy = 4;
+  tex.needsUpdate = true;
+  _detail = tex;
+  return tex;
+}
+export function disposeDetailTexture() { if (_detail) { _detail.dispose(); _detail = null; } }

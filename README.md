@@ -28,8 +28,9 @@ Vercel, S3, nginx) or from a sub-folder.
 | Drag (mouse or one finger) | Look around the deck |
 | W A S D / arrow keys | Look with the keyboard |
 | Mouse wheel, pinch, `+` / `−` | Zoom |
-| Click / tap a celestial body | Open its target card → **Focus** or **Observe** |
-| `N` | Navigation panel (choose a destination → **Engage warp drive**) |
+| Click / tap a celestial body | Open its target card → **Far Orbit**, **Close Approach**, **Cinematic Flyby**, **Focus** |
+| `N` | Navigation panel (choose a destination → **Engage navigation**) |
+| `O` | Solar System map (click a world to plot a course) |
 | `R` | Reset view |
 | `M` | Mute / unmute |
 | `Space` | Skip the running sequence (boarding, warp, cinematic event) |
@@ -45,16 +46,18 @@ Settings (bottom bar): render quality (Auto / High / Medium / Low), **Reduced Mo
   engines start → shutters open on the universe.
 - **Observation deck**: 3D interior with a forward bay window, roof glazing, two side windows, live instrument
   screens, holographic projector, light from outside casting shadows across the deck.
-- **Eight destinations**: Earth Orbit, Mars Orbit (with asteroid field), Jupiter System (Galilean moons),
-  Saturn System (rings with mutual shadows, Titan), Nebula Sector, Deep Space, Galaxy View, Unknown Exoplanet
-  (fictional, binary star, two moons).
+- **The Solar System**: an animated Sun, all eight planets on their own orbits (Mercury to Neptune), the Moon,
+  Phobos, Deimos, the Galilean moons, Titan, Triton, and the asteroid belt. Three observation distances per
+  world, including a ring-plane flyby at Saturn. Overview vantage and a holographic system map.
+- **Beyond**: Nebula Sector, Deep Space, Galaxy View, Unknown Exoplanet (fictional).
 - **Warp travel**: align → charge → warp (star streaks, tunnel, stylised aberration) → drop-out flash.
 - **Cinematic events**: Planetary Flyby, Nebula Passage, Galaxy Reveal, Warp Jump. All skippable.
 - **Audio**: generative ambient score with a different harmony per sector, engine hum that follows drive state,
   electronics, door, boot, UI, AI chime, warp charge / jump / arrival, nebula ambience.
 
 Real bodies show figures from NASA planetary fact sheets. Invented bodies are tagged **FICTIONAL** in the UI.
-Scene scale and distances are artistic, and ranges are labelled *simulated*.
+The scene uses a cinematic scale (compressed orbits, enlarged planets, fast years); card facts are real and
+ranges are labelled *simulated*. See PROJECT_STATUS.md for details and screenshots in `docs/screenshots/`.
 
 ## Project layout
 

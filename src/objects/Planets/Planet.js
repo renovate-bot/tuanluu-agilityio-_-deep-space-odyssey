@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { bakePlanet } from './PlanetBaker.js';
+import { detailTexture } from '../../utils/textures.js';
 
 const SPHERE_HI = new THREE.SphereGeometry(1, 128, 64);
 const SPHERE_LO = new THREE.SphereGeometry(1, 40, 20);
@@ -23,13 +24,27 @@ const FRAG = /* glsl */ `
 uniform sampler2D uSurface, uExtra, uRingTex;
 uniform vec3 uSunDir, uSunColor, uSun2Dir, uSun2Color;
 uniform vec3 uAtmoColor, uTwilight, uEmissiveColor, uCloudColor, uSpecColor;
+uniform sampler2D uDetailTex; uniform vec2 uDetailScale; uniform float uDetailAmp, uDetailFade, uFlow, uFlowBands;
 uniform float uBump, uCloudShift, uCloudAmount, uEmissiveNight, uEmissiveDay, uAtmoStrength, uSpec, uTexel, uTime, uAmbient;
 uniform vec3 uRingNormal, uCenter; uniform vec2 uRingRange; uniform float uRingShadow;
 varying vec2 vUv; varying vec3 vN; varying vec3 vT; varying vec3 vB; varying vec3 vWorld; varying vec3 vObj;
 
 void main(){
-  vec4 s = texture2D(uSurface, vUv);
+  #ifdef FLOW
+    // zonal jets: neighbouring latitude bands slide past each other (two phases cross-faded so the
+    // texture never shears apart)
+    float jet = sin((vUv.y - 0.5) * 3.14159265 * uFlowBands) * uFlow;
+    float ph0 = fract(uTime * 0.02), ph1 = fract(uTime * 0.02 + 0.5);
+    vec4 s = mix(texture2D(uSurface, vUv + vec2(jet * (ph0 - 0.5), 0.0)), texture2D(uSurface, vUv + vec2(jet * (ph1 - 0.5), 0.0)), abs(ph0 - 0.5) * 2.0);
+  #else
+    vec4 s = texture2D(uSurface, vUv);
+  #endif
   vec3 albedo = s.rgb * s.rgb;
+  // close-range detail: tiling noise fades in as the ship approaches, so the surface keeps resolving
+  float dAmp = uDetailAmp * uDetailFade;
+  vec3 dt1 = texture2D(uDetailTex, vUv * uDetailScale).rgb;
+  vec3 dt2 = texture2D(uDetailTex, vUv * uDetailScale * 3.7 + 0.37).rgb;
+  albedo *= 1.0 + dAmp * ((dt1.r - 0.5) * 1.1 + (dt2.g - 0.5) * 0.7);
   vec4 ex = texture2D(uExtra, vUv);
   vec3 N = normalize(vN);
   vec3 V = normalize(cameraPosition - vWorld);
@@ -38,7 +53,7 @@ void main(){
   float lat = max(sqrt(max(1.0 - vObj.y * vObj.y, 0.0)), 0.08);
   float hx = texture2D(uSurface, vUv + vec2(uTexel / lat, 0.0)).a - texture2D(uSurface, vUv - vec2(uTexel / lat, 0.0)).a;
   float hy = texture2D(uSurface, vUv + vec2(0.0, uTexel)).a - texture2D(uSurface, vUv - vec2(0.0, uTexel)).a;
-  vec3 Nb = normalize(N - uBump * (hx * normalize(vT) + hy * normalize(vB)));
+  vec3 Nb = normalize(N - uBump * (hx * normalize(vT) + hy * normalize(vB)) - dAmp * 0.9 * ((dt1.g - dt2.r) * normalize(vT) + (dt1.b - dt2.b) * normalize(vB)));
 
   float ndlGeo = dot(N, uSunDir);
   float ndl = dot(Nb, uSunDir);
@@ -157,6 +172,12 @@ export class Planet {
       uAtmoStrength: { value: cfg.atmoInner ?? 0.6 },
       uSpec: { value: cfg.spec ?? 0 },
       uTexel: { value: 1.2 / size },
+      uDetailTex: { value: detailTexture() },
+      uDetailScale: { value: new THREE.Vector2(...(cfg.detailScale || [36, 18])) },
+      uDetailAmp: { value: cfg.detail ?? 0.35 },
+      uDetailFade: { value: 0 },
+      uFlow: { value: cfg.flow ?? 0 },
+      uFlowBands: { value: cfg.flowBands ?? 8 },
       uTime: { value: 0 },
       uAmbient: { value: cfg.ambient ?? 0.004 },
       uRingNormal: { value: new THREE.Vector3(0, 1, 0) },
@@ -164,7 +185,7 @@ export class Planet {
       uRingRange: { value: new THREE.Vector2(1, 2) },
       uRingShadow: { value: 0 },
     };
-    this.material = new THREE.ShaderMaterial({ uniforms: this.uniforms, vertexShader: VERT, fragmentShader: FRAG });
+    this.material = new THREE.ShaderMaterial({ uniforms: this.uniforms, vertexShader: VERT, fragmentShader: FRAG, defines: cfg.flow ? { FLOW: 1 } : {} });
 
     // LOD: full-resolution sphere up close, light one when the body is only a few pixels wide
     this.lod = new THREE.LOD();
@@ -218,6 +239,8 @@ export class Planet {
     // sunWorld and the planet share a parent offset, so the direction can be taken from local positions
     this._s.copy(sunWorld).sub(this.localPosition()).normalize();
     this.uniforms.uSunDir.value.copy(this._s);
+    const d = this._c.distanceTo(camera.position) / this.radius;
+    this.uniforms.uDetailFade.value = 1 - THREE.MathUtils.smoothstep(d, 2.4, 8);
     this.lod.update(camera);
   }
 

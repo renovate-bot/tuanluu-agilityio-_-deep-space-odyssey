@@ -52,6 +52,8 @@ export const store = createStore({
   target: null, // selected point of interest (plain data)
   targetRange: '',
   observing: false,
+  viewMode: null, // far | close | flyby: how the ship is holding beside the current body
+  map: null, // { angles, ship } while the system map is open
   hover: null, // { name, x, y }
 
   panel: null, // 'audio' | 'settings' | 'help' | 'view' | null

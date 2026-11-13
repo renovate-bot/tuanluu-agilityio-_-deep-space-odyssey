@@ -6,7 +6,7 @@ import { CELESTIAL } from '../config/celestial.js';
 export function poi(id, position, radius, extra = {}) {
   const data = CELESTIAL[id];
   if (!data) throw new Error(`No celestial data for "${id}"`);
-  return { id, ...data, position, radius, pickRadius: extra.pickRadius || radius, observe: extra.observe || [-0.6, 0.3, 1.6], observeDist: extra.observeDist };
+  return { id, ...data, position, radius, pickRadius: extra.pickRadius || radius, observe: extra.observe || [-0.6, 0.3, 1.6], observeDist: extra.observeDist, body: extra.body || null };
 }
 
 /** Moons on simple circular orbits around a parent planet, positioned directly in universe coordinates. */

@@ -44,9 +44,25 @@ export function createRingTexture(seed = 7) {
   return tex;
 }
 
+/** Thin, dark ring system: a handful of narrow bands (Uranus), the outermost one brightest. */
+export function createThinRingTexture() {
+  const W = 1024;
+  const data = new Uint8Array(W * 4);
+  const bands = [[0.08, 0.004, 0.25], [0.14, 0.004, 0.25], [0.2, 0.004, 0.3], [0.36, 0.005, 0.4], [0.42, 0.005, 0.4], [0.5, 0.004, 0.35], [0.6, 0.004, 0.35], [0.7, 0.005, 0.45], [0.93, 0.02, 0.95]];
+  for (let i = 0; i < W; i++) {
+    const u = i / (W - 1);
+    let d = 0.015; // tenuous dust sheet between the bands
+    for (const [c, w, a] of bands) d = Math.max(d, a * Math.exp(-Math.pow((u - c) / w, 2)));
+    data.set([150, 165, 175, 255 * Math.min(1, d)], i * 4);
+  }
+  const tex = new THREE.DataTexture(data, W, 1, THREE.RGBAFormat);
+  tex.minFilter = THREE.LinearFilter; tex.magFilter = THREE.LinearFilter; tex.needsUpdate = true;
+  return tex;
+}
+
 /** Planetary rings: lit and back-lit shading, plus the planet's shadow across them. */
 export class Rings {
-  constructor(planet, { inner = 1.24, outer = 2.27, texture }) {
+  constructor(planet, { inner = 1.24, outer = 2.27, texture, shadow = 0.85 }) {
     this.planet = planet;
     this.texture = texture || createRingTexture();
     const R = planet.radius;
@@ -59,18 +75,24 @@ export class Rings {
       uNormal: planet.uniforms.uRingNormal,
       uRange: { value: new THREE.Vector2(R * inner, R * outer) },
       uRadius: { value: R },
+      uTime: planet.uniforms.uTime,
     };
     this.material = new THREE.ShaderMaterial({
       uniforms: this.uniforms,
       vertexShader: /* glsl */ `
-        varying vec3 vWorld; varying float vR;
-        void main(){ vR = length(position.xy); vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
+        varying vec3 vWorld; varying float vR; varying vec2 vP;
+        void main(){ vR = length(position.xy); vP = position.xy; vec4 w = modelMatrix * vec4(position, 1.0); vWorld = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
       fragmentShader: /* glsl */ `
-        uniform sampler2D uTex; uniform vec3 uSunDir, uSunColor, uCenter, uNormal; uniform vec2 uRange; uniform float uRadius;
-        varying vec3 vWorld; varying float vR;
+        uniform sampler2D uTex; uniform vec3 uSunDir, uSunColor, uCenter, uNormal; uniform vec2 uRange; uniform float uRadius, uTime;
+        varying vec3 vWorld; varying float vR; varying vec2 vP;
         void main(){
           float u = (vR - uRange.x) / (uRange.y - uRange.x);
           vec4 t = texture2D(uTex, vec2(u, 0.5));
+          // the ring is a disc of orbiting particles: inner lanes turn faster, and density is slightly clumpy
+          float az = atan(vP.y, vP.x) + uTime * 0.06 * pow(uRange.x / vR, 1.5);
+          float clump = sin(az * 23.0 + vR * 0.011) * sin(az * 57.0 - vR * 0.023);
+          float grain = sin(vR * 2.1) * sin(vR * 0.73 + 1.3);
+          t.a = clamp(t.a * (1.0 + 0.1 * clump + 0.14 * grain), 0.0, 1.0);
           vec3 V = normalize(cameraPosition - vWorld);
           float sunSide = dot(uNormal, uSunDir), viewSide = dot(uNormal, V);
           float elev = 0.35 + 0.65 * sqrt(abs(sunSide));
@@ -97,7 +119,7 @@ export class Rings {
 
     planet.uniforms.uRingTex.value = this.texture;
     planet.uniforms.uRingRange.value.set(R * inner, R * outer);
-    planet.uniforms.uRingShadow.value = 0.85;
+    planet.uniforms.uRingShadow.value = shadow;
     this._n = new THREE.Vector3();
   }
 
