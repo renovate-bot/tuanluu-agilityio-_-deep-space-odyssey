@@ -16,7 +16,7 @@ Checked = exercised with Playwright + Chromium (software WebGL), screenshots rev
 | Boarding: fly-in → hatch closes/locks → power-up flicker → 4 screens wake → engine start → shutters open; skippable | done |
 | Observation deck: bay window (3 panes), roof glazing, 2 side windows, consoles, 4 live canvas screens, hologram, seats, shadow-casting exterior light | done |
 | Stars: sky sphere with band + clusters + twinkle, baked galactic haze, wrapped mid-field with parallax and warp streaks, near dust | done |
-| Planets: Earth (clouds, night lights, ocean glint, atmosphere), Moon, Mars, Jupiter (Great Red Spot) + 4 Galilean moons, Saturn + rings (mutual shadows) + Titan, fictional Vespera + 2 moons + binary star | done |
+| Planets: Earth (clouds, night lights, ocean glint, atmosphere), Moon, Mars, Jupiter + 4 Galilean moons, Saturn + rings (mutual shadows) + Titan, fictional Vespera + 2 moons + binary star | done |
 | Asteroid field (InstancedMesh, GPU tumble) | done |
 | Nebulae: Azure Veil (blue), Violet Shroud (purple), Crimson Expanse (red), Aurum Cloud (golden) | done |
 | Galaxies: spiral (baked disc + particles + dust lanes), elliptical, irregular, globular cluster | done |
@@ -46,7 +46,7 @@ Checked = exercised with Playwright + Chromium (software WebGL), screenshots rev
 
 ## Known issues / rough edges
 - Earth's night lights read as clumps rather than fine city grids up close.
-- Jupiter's band edges could use finer turbulence; the Great Red Spot is fairly pale.
+- Jupiter: the Great Red Spot exists and was seen during the flyby, but it is not reliably in view from the parked position (it was out of frame in the last check). Band edges could use finer turbulence.
 - Nebula cloud texture shows a slightly "veined" look when the ship is deep inside it.
 - Ship exterior is primitive-built; fine for the arrival shot, not for close inspection.
 - Cockpit seats and consoles are simple boxes (kept dark on purpose).

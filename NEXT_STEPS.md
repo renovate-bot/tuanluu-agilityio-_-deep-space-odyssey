@@ -13,7 +13,7 @@ Ordered by priority. Read PROJECT_STATUS.md first and confirm against the source
 
 ## 2. Visual upgrades
 1. Earth: finer city lights (higher-frequency mask or a dedicated 4096 night bake on High).
-2. Jupiter: add flow-map animation of bands; stronger Great Red Spot; small white ovals.
+2. Jupiter: make the Great Red Spot reliably visible from the parked view (fix the spin set in `onArrive`, `src/scenes/SolarSystem.js`), make it stronger; flow-map animation of bands; small white ovals.
 3. Nebula: second atlas with softer puffs to break up the veined look when inside; optional god-ray sprite.
 4. Ship exterior: more greebles, hull lettering; cockpit: bevelled consoles, proper seats, more decals.
 5. Optional post: subtle depth of field for Observe mode, SSAO/GTAO on the deck (High only).
